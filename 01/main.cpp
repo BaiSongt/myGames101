@@ -7,19 +7,23 @@
 constexpr double MY_PI = 3.1415926;
 inline double DEG2RAD(double deg) {return deg * MY_PI/180;}
 
+// 获取视图矩阵
 Eigen::Matrix4f get_view_matrix(Eigen::Vector3f eye_pos)
 {
     Eigen::Matrix4f view = Eigen::Matrix4f::Identity();
 
     Eigen::Matrix4f translate;
-    translate << 1, 0, 0, -eye_pos[0], 0, 1, 0, -eye_pos[1], 0, 0, 1,
-        -eye_pos[2], 0, 0, 0, 1;
+    translate << 1, 0, 0, -eye_pos[0],
+                 0, 1, 0, -eye_pos[1],
+                 0, 0, 1, -eye_pos[2],
+                 0, 0, 0, 1;
 
     view = translate * view;
 
     return view;
 }
 
+// 获取模型矩阵
 Eigen::Matrix4f get_model_matrix(float rotation_angle)
 {
     Eigen::Matrix4f model = Eigen::Matrix4f::Identity();
@@ -29,14 +33,15 @@ Eigen::Matrix4f get_model_matrix(float rotation_angle)
     // Then return it.
 
     double rad = DEG2RAD(rotation_angle);
-    model << cos(rad),-sin(rad),0,0,
-             sin(rad),cos(rad),0,0,
-             0,0,1,0,
-             0,0,0,1;
+    model << cos(rad), -sin(rad), 0,  0,
+             sin(rad), cos(rad),  0,  0,
+             0,        0,         1,  0,
+             0,        0,         0,  1;
 
     return model;
 }
 
+// 获取投影矩阵
 Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio,
                                       float zNear, float zFar)
 {
@@ -59,6 +64,19 @@ Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio,
     return projection;
 }
 
+/**
+ * @brief Main entry point of the program
+ *
+ * @param argc Number of command line arguments
+ * @param argv Array of command line arguments
+ *
+ * @return 0 on success
+ *
+ * The main function of the program. It initializes the rasterizer, loads the
+ * positions and indices of the triangle, and then draws it. It also sets up an
+ * event loop to handle keyboard input and update the rotation angle of the
+ * triangle accordingly.
+ */
 int main(int argc, const char** argv)
 {
     float angle = 0;
@@ -75,14 +93,17 @@ int main(int argc, const char** argv)
             return 0;
     }
 
+    // 创建光栅化器对象
     rst::rasterizer r(700, 700);
 
+    // 设置视点位置
     Eigen::Vector3f eye_pos = {0, 0, 5};
 
+    // 定义顶点和索引数据
     std::vector<Eigen::Vector3f> pos{{2, 0, -2}, {0, 2, -2}, {-2, 0, -2}};
-
     std::vector<Eigen::Vector3i> ind{{0, 1, 2}};
 
+    // 加载顶点和索引数据
     auto pos_id = r.load_positions(pos);
     auto ind_id = r.load_indices(ind);
 
@@ -105,7 +126,7 @@ int main(int argc, const char** argv)
         return 0;
     }
 
-    while (key != 27) {
+    while (key != 27) {  // 按下 ESC 键退出
         r.clear(rst::Buffers::Color | rst::Buffers::Depth);
 
         r.set_model(get_model_matrix(angle));
